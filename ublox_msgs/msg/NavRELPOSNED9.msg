@@ -19,7 +19,7 @@ uint8 version                     # Message version (0x00 for this version)
 uint8 reserved1                   # Reserved
 uint16 refStationId               # Reference Station ID. Must be in the range
                                   # 0..4095
-uint32 iTow                       # GPS time of week of the navigation epoch
+uint32 iTOW                       # GPS time of week of the navigation epoch
                                   # [ms]
 
 int32 relPosN                     # North component of relative position vector
@@ -67,7 +67,7 @@ uint32 accD                       # Accuracy of relative position Down component
 uint32 accLength                  # Accuracy of length of the relative position
                                   # vector [0.1 mm]
 uint32 accHeading                 # Accuracy of heading of the relative position
-                                  # vector [0.1 mm]
+                                  # vector [1e-5 deg]
 
 uint8[4] reserved3                # Reserved
 

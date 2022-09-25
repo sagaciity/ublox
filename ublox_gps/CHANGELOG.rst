@@ -2,6 +2,40 @@
 Changelog for package ublox_gps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.0 (2021-10-15)
+------------------
+* Add rtcm_msgs dependency
+* Add RTK support via rtcm
+* GPS coordinate precision corrected for high accuracy.
+* Diagonstics for Differential GNSS updated.
+* Add a new parameter to set the search path for the param_file_name. Add a default to the node_name parameter.
+* Add zed-f9p configuration
+* Contributors: Balamurugan Kandan, Chris Iverach-Brereton, Igor
+
+1.4.1 (2020-06-04)
+------------------
+* fix signs in sensor_msgs::Imu output
+* Contributors: Raphael Riebl
+
+1.4.0 (2020-05-28)
+------------------
+* Bump CMake minimum version to 3.0.2
+* Move variables from .h to .cpp to solve linking issues
+* added support for protocol version >= 18
+* Contributors: Firat Kasmis, Gonçalo Pereira
+
+1.3.1 (2020-03-12)
+------------------
+* Fix unit in covariance calculation
+* Contributors: Ferry Schoenmakers
+
+1.3.0 (2020-01-10)
+------------------
+* Fix heading output to comply with REP-103
+  When not reporting valid heading, overwrite covariance with big number (0 otherwise)
+* CfgNAV5: add dynamic model bike
+* Contributors: Ferry Schoenmakers, Raphael Riebl
+
 1.2.0 (2019-11-19)
 ------------------
 * Add support for ZED-F9P new RELPOSNED message and provide heading output

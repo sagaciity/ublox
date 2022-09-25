@@ -50,12 +50,15 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/TimeReference.h>
 #include <sensor_msgs/Imu.h>
+#include <nmea_msgs/Sentence.h>
 // Other U-Blox package includes
 #include <ublox_msgs/ublox_msgs.h>
 // Ublox GPS includes
 #include <ublox_gps/gps.h>
 #include <ublox_gps/utils.h>
 #include <ublox_gps/raw_data_pa.h>
+
+#include <rtcm_msgs/Message.h>
 
 // This file declares the ComponentInterface which acts as a high level
 // interface for u-blox firmware, product categories, etc. It contains methods
@@ -425,6 +428,16 @@ void publish(const MessageT& m, const std::string& topic) {
   publisher.publish(m);
 }
 
+void publish_nmea(const std::string& sentence, const std::string& topic) {
+  static ros::Publisher publisher = nh->advertise<nmea_msgs::Sentence>(topic,
+                                                            kROSQueueSize);
+  nmea_msgs::Sentence m;
+  m.header.stamp = ros::Time::now();
+  m.header.frame_id = frame_id;
+  m.sentence = sentence;
+  publisher.publish(m);
+}
+
 /**
  * @param gnss The string representing the GNSS. Refer MonVER message protocol.
  * i.e. GPS, GLO, GAL, BDS, QZSS, SBAS, IMES
@@ -487,9 +500,9 @@ typedef boost::shared_ptr<ComponentInterface> ComponentPtr;
  */
 class UbloxNode : public virtual ComponentInterface {
  public:
-  //! How long to wait during I/O reset [s]
-  constexpr static int kResetWait = 10;
-  //! how often (in seconds) to call poll messages
+  //! How often (in seconds) to send keep-alive message
+  constexpr static double kKeepAlivePeriod = 10.0;
+  //! How often (in seconds) to call poll messages
   constexpr static double kPollDuration = 1.0;
   // Constants used for diagnostic frequency updater
   //! [s] 5Hz diagnostic period
@@ -578,6 +591,12 @@ class UbloxNode : public virtual ComponentInterface {
    */
   void addProductInterface(std::string product_category,
                            std::string ref_rov = "");
+
+  /**
+   * @brief Poll version message from the U-Blox device to keep socket active.
+   * @param event a timer indicating how often to poll
+   */
+  void keepAlive(const ros::TimerEvent& event);
 
   /**
    * @brief Poll messages from the U-Blox device.
@@ -887,6 +906,17 @@ class UbloxFirmware7Plus : public UbloxFirmware {
       stat.level = diagnostic_msgs::DiagnosticStatus::OK;
       stat.message = "Time only fix";
     }
+    
+    // Check whether differential GNSS available
+    if (last_nav_pvt_.flags & ublox_msgs::NavPVT::FLAGS_DIFF_SOLN) {
+      stat.message += ", DGNSS";
+    } 
+    // If DGNSS, then update the differential solution status
+    if (last_nav_pvt_.flags & ublox_msgs::NavPVT::CARRIER_PHASE_FLOAT) {
+      stat.message += ", FLOAT FIX";
+    } else if (last_nav_pvt_.flags & ublox_msgs::NavPVT::CARRIER_PHASE_FIXED) {
+      stat.message += ", RTK FIX";
+    }
 
     // If fix not ok (w/in DOP & Accuracy Masks), raise the diagnostic level
     if (!(last_nav_pvt_.flags & ublox_msgs::NavPVT::FLAGS_GNSS_FIX_OK)) {
@@ -901,8 +931,14 @@ class UbloxFirmware7Plus : public UbloxFirmware {
 
     // append last fix position
     stat.add("iTOW [ms]", last_nav_pvt_.iTOW);
-    stat.add("Latitude [deg]", last_nav_pvt_.lat * 1e-7);
-    stat.add("Longitude [deg]", last_nav_pvt_.lon * 1e-7);
+    std::ostringstream gnss_coor;
+    gnss_coor << std::fixed << std::setprecision(7);
+    gnss_coor << (last_nav_pvt_.lat * 1e-7);
+    stat.add("Latitude [deg]", gnss_coor.str());
+    gnss_coor.str("");
+    gnss_coor.clear();
+    gnss_coor << (last_nav_pvt_.lon * 1e-7);
+    stat.add("Longitude [deg]", gnss_coor.str());
     stat.add("Altitude [m]", last_nav_pvt_.height * 1e-3);
     stat.add("Height above MSL [m]", last_nav_pvt_.hMSL * 1e-3);
     stat.add("Horizontal Accuracy [m]", last_nav_pvt_.hAcc * 1e-3);
@@ -1059,6 +1095,8 @@ class RawDataProduct: public virtual ComponentInterface {
  */
 class AdrUdrProduct: public virtual ComponentInterface {
  public:
+  AdrUdrProduct(float protocol_version);
+  
   /**
    * @brief Get the ADR/UDR parameters.
    *
@@ -1092,7 +1130,8 @@ class AdrUdrProduct: public virtual ComponentInterface {
 
  protected:
   //! Whether or not to enable dead reckoning
-  bool use_adr_;
+  bool use_adr_;  
+  float protocol_version_;
 
    
   sensor_msgs::Imu imu_;
@@ -1320,6 +1359,11 @@ class HpPosRecProduct: public virtual HpgRefProduct {
   void subscribe();
 
  protected:
+
+  /**
+   * @brief Publish a sensor_msgs/NavSatFix message upon receiving a HPPOSLLH UBX message
+   */
+  void callbackNavHpPosLlh(const ublox_msgs::NavHPPOSLLH& m);
 
   /**
    * @brief Set the last received message and call rover diagnostic updater

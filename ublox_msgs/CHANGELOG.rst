@@ -2,6 +2,28 @@
 Changelog for package ublox_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.5.0 (2021-10-15)
+------------------
+* Fixed reconfig value in UBX_CFG_ANT.
+* Contributors: ito-san
+
+1.4.1 (2020-06-04)
+------------------
+
+1.4.0 (2020-05-28)
+------------------
+* Bump CMake minimum version to 3.0.2
+* Contributors: Gonçalo Pereira
+
+1.3.1 (2020-03-12)
+------------------
+
+1.3.0 (2020-01-10)
+------------------
+* Fix heading accuracy unit in comments
+* CfgNAV5: add dynamic model bike
+* Contributors: Ferry Schoenmakers, Raphael Riebl
+
 1.2.0 (2019-11-19)
 ------------------
 * Add support for ZED-F9P new RELPOSNED message and provide heading output
