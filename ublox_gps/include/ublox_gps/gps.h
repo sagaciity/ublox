@@ -36,6 +36,7 @@
 #include <stdexcept>
 // Boost
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ip/udp.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/atomic.hpp>
@@ -97,6 +98,13 @@ class Gps {
   void initializeTcp(std::string host, std::string port);
 
   /**
+   * @brief Initialize UDP I/O.
+   * @param host the UDP host
+   * @param port the UDP port
+   */
+  void initializeUdp(std::string host, std::string port);
+
+  /**
    * @brief Initialize the Serial I/O port.
    * @param port the device port address
    * @param baudrate the desired baud rate of the port
@@ -116,6 +124,11 @@ class Gps {
    * @param uart_out the UART Out protocol, see CfgPRT for options
    */
   void resetSerial(std::string port);
+
+  /**
+   * @brief Send rtcm correction message.
+  */
+  bool sendRtcm(const std::vector<uint8_t> &message);
 
   /**
    * @brief Closes the I/O port, and initiates save on shutdown procedure
@@ -282,7 +295,7 @@ class Gps {
    * @note This is part of the expert settings. It is recommended you check
    * the ublox manual first.
    */
-  bool setPpp(bool enable);
+  bool setPpp(bool enable, float protocol_version);
 
   /**
    * @brief Set the DGNSS mode (see CfgDGNSS message for details).
@@ -296,7 +309,7 @@ class Gps {
    * @param enable If true, enable ADR.
    * @return true on ACK, false on other conditions.
    */
-  bool setUseAdr(bool enable);
+  bool setUseAdr(bool enable, float protocol_version);
 
   /**
    * @brief Configure the U-Blox to UTC time 
@@ -332,6 +345,12 @@ class Gps {
    */
   template <typename T>
   void subscribe(typename CallbackHandler_<T>::Callback callback);
+
+  /**
+   * @brief Subscribe to the given Ublox message.
+   * @param the callback handler for the message
+   */
+  void subscribe_nmea(boost::function<void(const std::string&)> callback) { callbacks_.set_nmea_callback(callback); }
 
   /**
    * @brief Subscribe to the message with the given ID. This is used for

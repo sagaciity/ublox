@@ -246,6 +246,42 @@ void Gps::initializeTcp(std::string host, std::string port) {
                                                     io_service)));
 }
 
+void Gps::initializeUdp(std::string host, std::string port) {
+  host_ = host;
+  port_ = port;
+  boost::shared_ptr<boost::asio::io_service> io_service(
+      new boost::asio::io_service);
+  boost::asio::ip::udp::resolver::iterator endpoint;
+
+  try {
+    boost::asio::ip::udp::resolver resolver(*io_service);
+    endpoint =
+        resolver.resolve(boost::asio::ip::udp::resolver::query(host, port));
+  } catch (std::runtime_error& e) {
+    throw std::runtime_error("U-Blox: Could not resolve" + host + " " +
+                             port + " " + e.what());
+  }
+
+  boost::shared_ptr<boost::asio::ip::udp::socket> socket(
+    new boost::asio::ip::udp::socket(*io_service));
+
+  try {
+    socket->connect(*endpoint);
+  } catch (std::runtime_error& e) {
+    throw std::runtime_error("U-Blox: Could not connect to " +
+                             endpoint->host_name() + ":" +
+                             endpoint->service_name() + ": " + e.what());
+  }
+
+  ROS_INFO("U-Blox: Connected to %s:%s.", endpoint->host_name().c_str(),
+           endpoint->service_name().c_str());
+
+  if (worker_) return;
+  setWorker(boost::shared_ptr<Worker>(
+      new AsyncWorker<boost::asio::ip::udp::socket>(socket,
+                                                    io_service)));
+}
+
 void Gps::close() {
   if(save_on_shutdown_) {
     if(saveOnShutdown())
@@ -502,11 +538,13 @@ bool Gps::setDeadReckonLimit(uint8_t limit) {
   return configure(msg);
 }
 
-bool Gps::setPpp(bool enable) {
+bool Gps::setPpp(bool enable, float protocol_version) {
   ROS_DEBUG("%s PPP", (enable ? "Enabling" : "Disabling"));
 
   ublox_msgs::CfgNAVX5 msg;
   msg.usePPP = enable;
+  if(protocol_version >= 18)
+    msg.version = 2;
   msg.mask1 = ublox_msgs::CfgNAVX5::MASK1_PPP;
   return configure(msg);
 }
@@ -518,11 +556,14 @@ bool Gps::setDgnss(uint8_t mode) {
   return configure(cfg);
 }
 
-bool Gps::setUseAdr(bool enable) {
+bool Gps::setUseAdr(bool enable, float protocol_version) {
   ROS_DEBUG("%s ADR/UDR", (enable ? "Enabling" : "Disabling"));
 
   ublox_msgs::CfgNAVX5 msg;
   msg.useAdr = enable;
+  
+  if(protocol_version >= 18)
+    msg.version = 2;
   msg.mask2 = ublox_msgs::CfgNAVX5::MASK2_ADR;
   return configure(msg);
 }
