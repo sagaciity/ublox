@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
-  <arg name="node_name" />
-  <arg name="param_file_name" doc="c94_m8p_rover_USB0" />
+  <arg name="node_name" value="RTCM_test"/>
+  <arg name="param_file_name" doc="c94_m8p_rover.yaml" />
   <arg name="output" default="screen" />
   <arg name="respawn" default="true" />
   <arg name="respawn_delay" default="30" />
@@ -14,6 +14,6 @@
         respawn="$(arg respawn)" 
         respawn_delay="$(arg respawn_delay)">
     <rosparam command="load" 
-              file="$(find ublox_gps)/config/$(arg param_file_name).yaml" />
+              file="$(find ublox_gps)/config/c94_m8p_rover.yaml" />
   </node>
 </launch>

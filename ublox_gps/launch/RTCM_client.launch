@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+    <node pkg="ntrip_ros" type="ntripclient.py" name="ntrip_client" output="screen">
+        <param name="ntrip_server" value="14.139.195.5:2101" />
+        <param name="ntrip_user" value="DIC" />
+        <param name="ntrip_pass" value="Satya1976" />
+        <param name="ntrip_stream" value="SAGACIITY" />
+        <param name="nmea_gga" value=""   />
+        <param name="rtcm_topic" value="rtcm" />
+        <param name="nmea_topic" value="nmea" />
+         <!-- 
+         $GPGGA,%02d%02d%04.2f,3213.06516704,N,599.62092864,W,2,6,1.2,18.893,M,-25.669,M,2.0,0031*4F
+
+         GPGGA,150118.00,2015.072,N,08547.356,E,1,08,,77.6,M,-62.6,M,,*47
+
+        <param name="rtcm_topic" value="/send_rtcm" />
+        <param name="nmea_topic" value="/send_nmea" />
+        -->
+    </node>
+</launch>
